@@ -25,6 +25,15 @@ from haystack.fields import DateField, DateTimeField, IntegerField, FloatField, 
 from haystack.models import SearchResult
 from haystack.utils import get_identifier
 
+import mmseg
+def cn_segger(cntxt):
+    '''Cut Chinese text to words.'''
+    try:
+        cntxt = cntxt.encode('utf-8')
+    except UnicodeDecodeError:
+        pass
+    return ' '.join(mmseg.seg_txt(cntxt))
+
 try:
     import xapian
 except ImportError:
@@ -228,7 +237,7 @@ class XapianSearchBackend(BaseSearchBackend):
                             weight = 1
                         if field['type'] == 'text':
                             if field['multi_valued'] == 'false':
-                                term = _marshal_term(value)
+                                term = cn_segger( _marshal_term(value) )
                                 term_generator.index_text(term, weight)
                                 term_generator.index_text(term, weight, prefix)
                                 if len(term.split()) == 1:
@@ -237,7 +246,7 @@ class XapianSearchBackend(BaseSearchBackend):
                                 document.add_value(field['column'], _marshal_value(value))
                             else:
                                 for term in value:
-                                    term = _marshal_term(term)
+                                    term = cn_segger( _marshal_term(term) )
                                     term_generator.index_text(term, weight)
                                     term_generator.index_text(term, weight, prefix)
                                     if len(term.split()) == 1:
