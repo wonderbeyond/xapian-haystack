@@ -24,6 +24,7 @@ from haystack.exceptions import HaystackError, MissingDependency, MoreLikeThisEr
 from haystack.fields import DateField, DateTimeField, IntegerField, FloatField, BooleanField, MultiValueField
 from haystack.models import SearchResult
 from haystack.utils import get_identifier
+from haystack.inputs import Raw
 
 import mmseg
 def cn_segger(cntxt):
@@ -965,6 +966,8 @@ class XapianSearchQuery(BaseSearchQuery):
                 query_list.append(
                     self._query_from_search_node(child, child.negated)
                 )
+            elif isinstance(child[1], Raw):
+                query_list.append( self.backend.parse_query(child[1].query_string) )
             else:
                 expression, term = child
                 field, filter_type = search_node.split_expression(expression)
@@ -981,7 +984,7 @@ class XapianSearchQuery(BaseSearchQuery):
                 if field == 'content':
                     query_list.append(self._content_field(term, is_not))
                 else:
-                    if filter_type == 'exact':
+                    if filter_type in ('exact', 'contains'):
                         query_list.append(self._filter_exact(term, field, is_not))
                     elif filter_type == 'gt':
                         query_list.append(self._filter_gt(term, field, is_not))
